@@ -1,23 +1,54 @@
-dist
-dist-*
-cabal-dev
-*.o
+# Output data files
+#
+/output/
+/public/data/
+/movies.json
+
+# Haskell build artifacts
+dist/
+dist-newstyle/
+.ghc.environment.*
 *.hi
-*.hie
+*.o
+*.dyn_hi
+*.dyn_o
+*.p_hi
+*.p_o
 *.chi
 *.chs.h
-*.dyn_o
-*.dyn_hi
-.hpc
-.hsenv
-.cabal-sandbox/
-cabal.sandbox.config
-*.prof
+*.lock
+*.dump-*
+.hpc/
 *.aux
-*.hp
-*.eventlog
-.stack-work/
 cabal.project.local
 cabal.project.local~
 .HTF/
-.ghc.environment.*
+.hie/
+
+# Binary files
+/tmdb-fetcher/output
+/tmdb-fetcher/dist-newstyle
+/dist/build/*/tmdb-fetcher/tmdb-fetcher
+*.exe
+
+# Nix build artifacts
+result
+result-*
+.direnv/
+.envrc
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+tmp/

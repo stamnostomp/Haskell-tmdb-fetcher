@@ -1,0 +1,29 @@
+cabal-version:      2.4
+name:               tmdb-fetcher
+version:            0.1.0.0
+synopsis:           TMDB Data Fetcher for Media Applications
+description:        A standalone Haskell application that fetches movie
+                    and TV show data from The Movie Database (TMDB) API
+                    and saves it as JSON for use in media applications.
+homepage:           https://github.com/yourusername/tmdb-fetcher
+license:            MIT
+license-file:       LICENSE
+author:             Your Name
+maintainer:         your.email@example.com
+category:           Web
+extra-source-files: README.md
+
+executable tmdb-fetcher
+    main-is:          Main.hs
+    build-depends:    base >=4.14 && <5,
+                      aeson >=1.5 && <2.2,
+                      bytestring >=0.10 && <0.12,
+                      http-conduit >=2.3 && <2.4,
+                      text >=1.2 && <2.1,
+                      time >=1.9 && <1.13,
+                      directory >=1.3 && <1.4,
+                      filepath >=1.4 && <1.5,
+                      unordered-containers >=0.2.10 && <0.3
+    hs-source-dirs:   .
+    default-language: Haskell2010
+    ghc-options:      -Wall -threaded -rtsopts -with-rtsopts=-N
