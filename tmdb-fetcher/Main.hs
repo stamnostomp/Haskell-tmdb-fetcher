@@ -61,6 +61,98 @@ data TMDBMovie = TMDBMovie
   }
   deriving (Show, Generic)
 
+data TMDBCredit = TMDBCredit
+  { tmdbCreditId :: String,
+    tmdbCast :: [TMDBCastMember],
+    tmdbCrew :: [TMDBCrewMember]
+  }
+  deriving (Show, Generic)
+
+data TMDBCastMember = TMDBCastMember
+  { tmdbCastId :: Int,
+    tmdbCastCharacter :: String,
+    tmdbCastCreditId :: String,
+    tmdbCastGender :: Maybe Int,
+    tmdbCastPersonId :: Int,
+    tmdbCastName :: String,
+    tmdbCastOrder :: Int,
+    tmdbCastProfilePath :: Maybe String
+  }
+  deriving (Show, Generic)
+
+data TMDBCrewMember = TMDBCrewMember
+  { tmdbCrewCreditId :: String,
+    tmdbCrewDepartment :: String,
+    tmdbCrewGender :: Maybe Int,
+    tmdbCrewPersonId :: Int,
+    tmdbCrewJob :: String,
+    tmdbCrewName :: String,
+    tmdbCrewProfilePath :: Maybe String
+  }
+  deriving (Show, Generic)
+
+data MediaItem = MediaItem
+  { mediaId :: String,
+    mediaTitle :: String,
+    mediaType :: String,
+    mediaImageUrl :: String,
+    mediaYear :: Int,
+    mediaRating :: Float,
+    mediaDescription :: String,
+    mediaBackdropUrl :: Maybe String,
+    mediaGenres :: [String],
+    mediaCast :: [CastMember],
+    mediaDirectors :: [CrewMember]
+  }
+  deriving (Show, Generic)
+
+data CastMember = CastMember
+  { castId :: String,
+    castName :: String,
+    castCharacter :: String,
+    castProfileUrl :: Maybe String,
+    castOrder :: Int
+  }
+  deriving (Show, Generic)
+
+data CrewMember = CrewMember
+  { crewId :: String,
+    crewName :: String,
+    crewJob :: String,
+    crewDepartment :: String,
+    crewProfileUrl :: Maybe String
+  }
+  deriving (Show, Generic)
+
+data Genre = Genre
+  { genreId :: Int,
+    genreName :: String
+  }
+  deriving (Show, Generic)
+
+data GenreResponse = GenreResponse
+  { genres :: [Genre]
+  }
+  deriving (Show, Generic)
+
+data TMDBResponse = TMDBResponse
+  { results :: [TMDBMovie]
+  }
+  deriving (Show, Generic)
+
+data CategoryOutput = CategoryOutput
+  { outId :: String,
+    outName :: String,
+    outItems :: [MediaItem]
+  }
+  deriving (Show, Generic)
+
+data OutputData = OutputData
+  { categories :: [CategoryOutput]
+  }
+  deriving (Show, Generic)
+
+-- JSON instances
 instance FromJSON TMDBMovie where
   parseJSON = A.withObject "TMDBMovie" $ \v -> do
     tmdbId <- v A..: "id"
@@ -75,11 +167,41 @@ instance FromJSON TMDBMovie where
     tmdbGenreIds <- v A..:? "genre_ids"
     return TMDBMovie {..}
 
-data Genre = Genre
-  { genreId :: Int,
-    genreName :: String
-  }
-  deriving (Show, Generic)
+instance FromJSON TMDBCredit where
+  parseJSON = A.withObject "TMDBCredit" $ \v -> do
+    -- Parse the ID field directly as a string to avoid type issues
+    movieId <- v A..: "id"
+    tmdbCast <- v A..: "cast"
+    tmdbCrew <- v A..: "crew"
+    -- Convert to string explicitly, working around type inference issues
+    let tmdbCreditId = case movieId of
+                         A.Number n -> show (round n :: Int)
+                         A.String s -> T.unpack s
+                         _ -> "unknown"
+    return TMDBCredit {..}
+
+instance FromJSON TMDBCastMember where
+  parseJSON = A.withObject "TMDBCastMember" $ \v -> do
+    tmdbCastId <- v A..: "cast_id"
+    tmdbCastCharacter <- v A..: "character"
+    tmdbCastCreditId <- v A..: "credit_id"
+    tmdbCastGender <- v A..:? "gender"
+    tmdbCastPersonId <- v A..: "id"
+    tmdbCastName <- v A..: "name"
+    tmdbCastOrder <- v A..: "order"
+    tmdbCastProfilePath <- v A..:? "profile_path"
+    return TMDBCastMember {..}
+
+instance FromJSON TMDBCrewMember where
+  parseJSON = A.withObject "TMDBCrewMember" $ \v -> do
+    tmdbCrewCreditId <- v A..: "credit_id"
+    tmdbCrewDepartment <- v A..: "department"
+    tmdbCrewGender <- v A..:? "gender"
+    tmdbCrewPersonId <- v A..: "id"
+    tmdbCrewJob <- v A..: "job"
+    tmdbCrewName <- v A..: "name"
+    tmdbCrewProfilePath <- v A..:? "profile_path"
+    return TMDBCrewMember {..}
 
 instance FromJSON Genre where
   parseJSON = A.withObject "Genre" $ \v -> do
@@ -87,38 +209,15 @@ instance FromJSON Genre where
     genreName <- v A..: "name"
     return Genre {..}
 
-data GenreResponse = GenreResponse
-  { genres :: [Genre]
-  }
-  deriving (Show, Generic)
-
 instance FromJSON GenreResponse where
   parseJSON = A.withObject "GenreResponse" $ \v -> do
     genres <- v A..: "genres"
     return GenreResponse {..}
 
-data TMDBResponse = TMDBResponse
-  { results :: [TMDBMovie]
-  }
-  deriving (Show, Generic)
-
 instance FromJSON TMDBResponse where
   parseJSON = A.withObject "TMDBResponse" $ \v -> do
     results <- v A..: "results"
     return TMDBResponse {..}
-
-data MediaItem = MediaItem
-  { mediaId :: String,
-    mediaTitle :: String,
-    mediaType :: String,
-    mediaImageUrl :: String,
-    mediaYear :: Int,
-    mediaRating :: Float,
-    mediaDescription :: String,
-    mediaBackdropUrl :: Maybe String,
-    mediaGenres :: [String]
-  }
-  deriving (Show, Generic)
 
 instance ToJSON MediaItem where
   toJSON MediaItem {..} =
@@ -131,15 +230,30 @@ instance ToJSON MediaItem where
         "rating" .= mediaRating,
         "description" .= mediaDescription,
         "backdropUrl" .= mediaBackdropUrl,
-        "genres" .= mediaGenres
+        "genres" .= mediaGenres,
+        "cast" .= mediaCast,
+        "directors" .= mediaDirectors
       ]
 
-data CategoryOutput = CategoryOutput
-  { outId :: String,
-    outName :: String,
-    outItems :: [MediaItem]
-  }
-  deriving (Show, Generic)
+instance ToJSON CastMember where
+  toJSON CastMember {..} =
+    object
+      [ "id" .= castId,
+        "name" .= castName,
+        "character" .= castCharacter,
+        "profileUrl" .= castProfileUrl,
+        "order" .= castOrder
+      ]
+
+instance ToJSON CrewMember where
+  toJSON CrewMember {..} =
+    object
+      [ "id" .= crewId,
+        "name" .= crewName,
+        "job" .= crewJob,
+        "department" .= crewDepartment,
+        "profileUrl" .= crewProfileUrl
+      ]
 
 instance ToJSON CategoryOutput where
   toJSON CategoryOutput {..} =
@@ -148,11 +262,6 @@ instance ToJSON CategoryOutput where
         "name" .= outName,
         "items" .= outItems
       ]
-
-data OutputData = OutputData
-  { categories :: [CategoryOutput]
-  }
-  deriving (Show, Generic)
 
 instance ToJSON OutputData where
   toJSON OutputData {..} =
@@ -286,9 +395,36 @@ fetchGenres apiKey = do
     (_, Left err) ->
       return $ Left $ "Error fetching TV genres: " ++ err
 
+-- Fetch credits (cast and crew) for a movie or TV show
+fetchCredits :: String -> Int -> String -> IO (Either String TMDBCredit)
+fetchCredits apiKey itemId mediaType = do
+  let endpoint = if mediaType == "Movie"
+                    then "/movie/" ++ show itemId ++ "/credits"
+                    else "/tv/" ++ show itemId ++ "/credits"
+
+  logInfo $ "Fetching credits for " ++ mediaType ++ " ID " ++ show itemId ++ "..."
+
+  result <- fetchFromTMDB apiKey endpoint []
+  case result of
+    Left err ->
+      return $ Left $ "Error fetching credits: " ++ err
+
+    Right responseData -> do
+      let creditsEither = eitherDecode responseData :: Either String TMDBCredit
+      case creditsEither of
+        Left err ->
+          return $ Left $ "Error parsing credits: " ++ err
+
+        Right credits -> do
+          logInfo $ "Successfully fetched " ++ show (length (tmdbCast credits)) ++ " cast members"
+          return $ Right credits
+
 -- Convert TMDB movie to our format
-convertMovieToMediaItem :: HashMap.HashMap Int String -> TMDBMovie -> MediaItem
-convertMovieToMediaItem genreMap movie =
+convertMovieToMediaItem :: String -> HashMap.HashMap Int String -> TMDBMovie -> IO MediaItem
+convertMovieToMediaItem apiKey genreMap movie = do
+  -- Get credits for this movie/show
+  creditsResult <- fetchCredits apiKey (tmdbId movie) (if tmdbTitle movie /= Nothing then "Movie" else "TVShow")
+
   let
     -- Get title from either movie title or TV show name
     title = fromMaybe "Unknown Title" (tmdbTitle movie `mbOr` tmdbName movie)
@@ -313,18 +449,52 @@ convertMovieToMediaItem genreMap movie =
 
     -- Map genre IDs to genre names
     genreNames = maybe [] (mapMaybe (\gid -> HashMap.lookup gid genreMap)) (tmdbGenreIds movie)
-  in
-    MediaItem
-      { mediaId = show (tmdbId movie),
-        mediaTitle = title,
-        mediaType = mediaType,
-        mediaImageUrl = imageUrl,
-        mediaYear = year,
-        mediaRating = rating,
-        mediaDescription = description,
-        mediaBackdropUrl = backdropUrl,
-        mediaGenres = genreNames
-      }
+
+    -- Process cast members (default to empty list if we couldn't fetch credits)
+    castMembers = case creditsResult of
+      Right credits ->
+        -- Take top 10 cast members
+        let topCast = take 10 (tmdbCast credits)
+        in map (\member ->
+          CastMember
+            { castId = show (tmdbCastPersonId member)
+            , castName = tmdbCastName member
+            , castCharacter = tmdbCastCharacter member
+            , castProfileUrl = fmap (\path -> imageBaseUrl ++ path) (tmdbCastProfilePath member)
+            , castOrder = tmdbCastOrder member
+            }) topCast
+      Left _ ->
+        []
+
+    -- Process directors (default to empty list if we couldn't fetch credits)
+    directors = case creditsResult of
+      Right credits ->
+        -- Filter crew for directors
+        let directorCrew = filter (\c -> tmdbCrewJob c == "Director") (tmdbCrew credits)
+        in map (\member ->
+          CrewMember
+            { crewId = show (tmdbCrewPersonId member)
+            , crewName = tmdbCrewName member
+            , crewJob = tmdbCrewJob member
+            , crewDepartment = tmdbCrewDepartment member
+            , crewProfileUrl = fmap (\path -> imageBaseUrl ++ path) (tmdbCrewProfilePath member)
+            }) directorCrew
+      Left _ ->
+        []
+
+  return MediaItem
+    { mediaId = show (tmdbId movie)
+    , mediaTitle = title
+    , mediaType = mediaType
+    , mediaImageUrl = imageUrl
+    , mediaYear = year
+    , mediaRating = rating
+    , mediaDescription = description
+    , mediaBackdropUrl = backdropUrl
+    , mediaGenres = genreNames
+    , mediaCast = castMembers
+    , mediaDirectors = directors
+    }
   where
     -- Helper function to extract year from a date string
     extractYear :: Maybe String -> Int
@@ -360,7 +530,9 @@ processCategory apiKey genreMap category = do
 
         Right response -> do
           let items = take (catLimit category) (results response)
-              mediaItems = map (convertMovieToMediaItem genreMap) items
+
+          -- Convert each movie, now with async credit fetching
+          mediaItems <- mapM (convertMovieToMediaItem apiKey genreMap) items
 
           logInfo $ "Successfully fetched " ++ show (length mediaItems) ++ " items for " ++ catName category
           return $ Right $ CategoryOutput (catId category) (catName category) mediaItems
